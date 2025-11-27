@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: shop
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/shop
+    username: postgres
+    password: "346655"
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  cache:
+    type: redis
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: "guest"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: shop
+
+jwt:
+  secret: "very-secret-key-for-shop-application-change-me"
+  expiration-ms: 3600000

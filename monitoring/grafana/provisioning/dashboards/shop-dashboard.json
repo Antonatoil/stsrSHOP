@@ -1,0 +1,10 @@
+{
+  "id": null,
+  "uid": "shop-dashboard",
+  "title": "Shop Dashboard",
+  "tags": ["shop"],
+  "timezone": "",
+  "schemaVersion": 36,
+  "version": 1,
+  "panels": []
+}
