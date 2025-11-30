@@ -23,7 +23,8 @@ public class Order {
     @OneToMany(
             mappedBy = "order",
             cascade = CascadeType.ALL,
-            orphanRemoval = true
+            orphanRemoval = true,
+            fetch = FetchType.EAGER // ВАЖНО: тянем items сразу, чтобы не ловить LazyInitializationException
     )
     private List<OrderItem> items = new ArrayList<>();
 

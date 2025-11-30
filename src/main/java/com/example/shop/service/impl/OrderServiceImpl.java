@@ -7,6 +7,7 @@ import com.example.shop.entity.OrderItem;
 import com.example.shop.entity.Product;
 import com.example.shop.entity.User;
 import com.example.shop.entity.enums.OrderStatus;
+import com.example.shop.exception.BadRequestException;
 import com.example.shop.exception.NotFoundException;
 import com.example.shop.mapper.OrderMapper;
 import com.example.shop.repository.OrderRepository;
@@ -15,9 +16,11 @@ import com.example.shop.repository.UserRepository;
 import com.example.shop.service.OrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,6 +29,7 @@ import java.util.List;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
@@ -45,8 +49,13 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * Создать заказ для текущего залогиненного пользователя.
+     * ВАЖНО: метод пишущий, поэтому @Transactional без readOnly.
+     * Здесь же:
+     *  - проверяем остатки stock;
+     *  - уменьшаем stock при успешном создании заказа.
      */
     @Override
+    @Transactional
     public OrderDto create(CreateOrderRequestDto dto) {
         log.info("Создание заказа для текущего пользователя");
 
@@ -70,8 +79,8 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal totalPrice = BigDecimal.ZERO;
         List<OrderItem> items = new ArrayList<>();
 
-        // 3. Пробегаемся по позициям заказа
-        for (var itemDto : dto.getItems()) {
+        // 3. Пробегаемся по позициям заказа: проверяем stock и списываем
+        dto.getItems().forEach(itemDto -> {
             Long productId = itemDto.getProductId();
             Integer quantity = itemDto.getQuantity();
 
@@ -80,17 +89,38 @@ public class OrderServiceImpl implements OrderService {
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new NotFoundException("Product not found"));
 
+            // --- ПРОВЕРКА СКЛАДА ---
+            Integer currentStock = product.getStock();
+            if (currentStock == null) {
+                currentStock = 0;
+            }
+
+            if (currentStock < quantity) {
+                throw new BadRequestException(
+                        "Not enough stock for product id=" + productId +
+                                ". Requested=" + quantity + ", available=" + currentStock
+                );
+            }
+
+            // --- СПИСЫВАЕМ СО СКЛАДА ---
+            product.setStock(currentStock - quantity);
+            // Отдельный save(product) не обязателен: product в persistence context,
+            // изменения уйдут в БД при коммите транзакции.
+
             OrderItem item = new OrderItem();
             item.setOrder(order);
             item.setProduct(product);
             item.setQuantity(quantity);
             item.setPrice(product.getPrice());
 
-            BigDecimal lineTotal = product.getPrice()
-                    .multiply(BigDecimal.valueOf(quantity));
-            totalPrice = totalPrice.add(lineTotal);
-
             items.add(item);
+        });
+
+        // 4. Считаем общую сумму заказа
+        for (OrderItem item : items) {
+            BigDecimal lineTotal = item.getPrice()
+                    .multiply(BigDecimal.valueOf(item.getQuantity()));
+            totalPrice = totalPrice.add(lineTotal);
         }
 
         order.setItems(items);
@@ -99,11 +129,14 @@ public class OrderServiceImpl implements OrderService {
         Order saved = orderRepository.save(order);
         log.info("Заказ создан: id={}, userId={}, totalPrice={}",
                 saved.getId(), user.getId(), saved.getTotalPrice());
+
+        // Маппим в DTO внутри транзакции => безопасно обращаемся к items и product
         return orderMapper.toDto(saved);
     }
 
     /**
      * Получить заказ по id (для авторизованных).
+     * readOnly = true берётся с класса.
      */
     @Override
     public OrderDto getById(Long id) {
@@ -115,6 +148,8 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * Мои заказы (по токену).
+     * ВАЖНО: маппинг в DTO делаем ВНУТРИ метода,
+     * а не лениво через Page.map(), чтобы не было LazyInitializationException.
      */
     @Override
     public Page<OrderDto> getMyOrders(Pageable pageable) {
@@ -129,25 +164,44 @@ public class OrderServiceImpl implements OrderService {
         log.debug("Поиск заказов по userId={} с page={}, size={}",
                 user.getId(), pageable.getPageNumber(), pageable.getPageSize());
 
-        return orderRepository.findAllByUserId(user.getId(), pageable)
-                .map(orderMapper::toDto);
+        Page<Order> ordersPage = orderRepository.findAllByUserId(user.getId(), pageable);
+
+        // Маппим в DTO прямо тут, пока транзакция и сессия ещё живы
+        List<OrderDto> dtoList = ordersPage
+                .getContent()
+                .stream()
+                .map(orderMapper::toDto)
+                .toList();
+
+        return new PageImpl<>(dtoList, pageable, ordersPage.getTotalElements());
     }
 
     /**
      * Все заказы (для админа).
+     * Аналогично — маппим внутри сервиса.
      */
     @Override
     public Page<OrderDto> getAllOrders(Pageable pageable) {
         log.info("Получение всех заказов: page={}, size={}",
                 pageable.getPageNumber(), pageable.getPageSize());
-        return orderRepository.findAll(pageable)
-                .map(orderMapper::toDto);
+
+        Page<Order> ordersPage = orderRepository.findAll(pageable);
+
+        List<OrderDto> dtoList = ordersPage
+                .getContent()
+                .stream()
+                .map(orderMapper::toDto)
+                .toList();
+
+        return new PageImpl<>(dtoList, pageable, ordersPage.getTotalElements());
     }
 
     /**
      * Обновление статуса заказа (только для админа).
+     * Пишущий метод -> @Transactional.
      */
     @Override
+    @Transactional
     public OrderDto updateStatus(Long id, OrderStatus status) {
         log.info("Обновление статуса заказа id={} на {}", id, status);
         Order order = orderRepository.findById(id)
@@ -160,5 +214,4 @@ public class OrderServiceImpl implements OrderService {
         log.info("Статус заказа обновлён: id={}, status={}", saved.getId(), saved.getStatus());
         return orderMapper.toDto(saved);
     }
-
 }
