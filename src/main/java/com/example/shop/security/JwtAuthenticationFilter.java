@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -35,8 +37,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        String requestUri = request.getRequestURI();
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
         if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
+            log.debug("Запрос без JWT или с некорректным Authorization header, uri={}", requestUri);
             filterChain.doFilter(request, response);
             return;
         }
@@ -45,12 +50,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String username;
         try {
             username = jwtService.extractUsername(token);
+            log.debug("Извлечён username из JWT: username={}, uri={}", username, requestUri);
         } catch (Exception ex) {
+            log.warn("Ошибка при разборе или валидации JWT для uri={}: {}", requestUri, ex.getMessage());
+            log.debug("Подробности ошибки JWT", ex);
             filterChain.doFilter(request, response);
             return;
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            log.debug("Аутентификация пользователя по JWT: username={}, uri={}", username, requestUri);
+
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
             if (jwtService.isTokenValid(token, userDetails)) {
@@ -64,6 +74,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new WebAuthenticationDetailsSource().buildDetails(request)
                 );
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.debug("JWT-аутентификация успешно установлена в SecurityContext: username={}", username);
+            } else {
+                log.warn("JWT токен невалиден для username={}, uri={}", username, requestUri);
             }
         }
 

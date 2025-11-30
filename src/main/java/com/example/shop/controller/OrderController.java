@@ -5,11 +5,13 @@ import com.example.shop.dto.order.OrderDto;
 import com.example.shop.service.OrderService;
 import com.example.shop.util.PaginationUtil;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
@@ -27,6 +29,7 @@ public class OrderController {
     @PostMapping
     @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_ADMIN')")
     public OrderDto create(@Valid @RequestBody CreateOrderRequestDto dto) {
+        log.info("Создание нового заказа");
         return orderService.create(dto);
     }
 
@@ -36,6 +39,7 @@ public class OrderController {
      */
     @GetMapping("/{id}")
     public OrderDto getById(@PathVariable Long id) {
+        log.debug("Запрос заказа по id={}", id);
         return orderService.getById(id);
     }
 
@@ -50,6 +54,8 @@ public class OrderController {
             @RequestParam(required = false) Integer size
     ) {
         Pageable pageable = PaginationUtil.defaultPageable(page, size);
+        log.debug("Запрос 'мои заказы': page={}, size={}",
+                pageable.getPageNumber(), pageable.getPageSize());
         return orderService.getMyOrders(pageable);
     }
 
@@ -63,6 +69,8 @@ public class OrderController {
             @RequestParam(required = false) Integer size
     ) {
         Pageable pageable = PaginationUtil.defaultPageable(page, size);
+        log.info("Админский запрос списка всех заказов: page={}, size={}",
+                pageable.getPageNumber(), pageable.getPageSize());
         return orderService.getAllOrders(pageable);
     }
 
@@ -75,7 +83,7 @@ public class OrderController {
             @PathVariable Long id,
             @RequestBody @Valid com.example.shop.dto.order.UpdateOrderStatusRequestDto dto
     ) {
+        log.info("Обновление статуса заказа id={} на {}", id, dto.getStatus());
         return orderService.updateStatus(id, dto.getStatus());
     }
 }
-

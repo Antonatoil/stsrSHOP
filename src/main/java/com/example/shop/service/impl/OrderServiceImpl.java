@@ -13,6 +13,7 @@ import com.example.shop.repository.OrderRepository;
 import com.example.shop.repository.ProductRepository;
 import com.example.shop.repository.UserRepository;
 import com.example.shop.service.OrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -46,13 +48,17 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public OrderDto create(CreateOrderRequestDto dto) {
+        log.info("Создание заказа для текущего пользователя");
+
         // 1. Достаём e-mail текущего пользователя из SecurityContext
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
+        log.debug("Текущий пользователь из SecurityContext: email={}", email);
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        log.debug("Пользователь найден: id={}, email={}", user.getId(), user.getEmail());
 
         // 2. Создаём Order
         Order order = new Order();
@@ -68,6 +74,8 @@ public class OrderServiceImpl implements OrderService {
         for (var itemDto : dto.getItems()) {
             Long productId = itemDto.getProductId();
             Integer quantity = itemDto.getQuantity();
+
+            log.debug("Обработка позиции заказа: productId={}, quantity={}", productId, quantity);
 
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new NotFoundException("Product not found"));
@@ -89,6 +97,8 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalPrice(totalPrice);
 
         Order saved = orderRepository.save(order);
+        log.info("Заказ создан: id={}, userId={}, totalPrice={}",
+                saved.getId(), user.getId(), saved.getTotalPrice());
         return orderMapper.toDto(saved);
     }
 
@@ -97,6 +107,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public OrderDto getById(Long id) {
+        log.debug("Поиск заказа по id={}", id);
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Order not found"));
         return orderMapper.toDto(order);
@@ -110,9 +121,13 @@ public class OrderServiceImpl implements OrderService {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
+        log.debug("Получение заказов для текущего пользователя: email={}", email);
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+
+        log.debug("Поиск заказов по userId={} с page={}, size={}",
+                user.getId(), pageable.getPageNumber(), pageable.getPageSize());
 
         return orderRepository.findAllByUserId(user.getId(), pageable)
                 .map(orderMapper::toDto);
@@ -123,14 +138,18 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public Page<OrderDto> getAllOrders(Pageable pageable) {
+        log.info("Получение всех заказов: page={}, size={}",
+                pageable.getPageNumber(), pageable.getPageSize());
         return orderRepository.findAll(pageable)
                 .map(orderMapper::toDto);
     }
+
     /**
      * Обновление статуса заказа (только для админа).
      */
     @Override
     public OrderDto updateStatus(Long id, OrderStatus status) {
+        log.info("Обновление статуса заказа id={} на {}", id, status);
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Order not found"));
 
@@ -138,6 +157,7 @@ public class OrderServiceImpl implements OrderService {
         order.setUpdatedAt(LocalDateTime.now());
 
         Order saved = orderRepository.save(order);
+        log.info("Статус заказа обновлён: id={}, status={}", saved.getId(), saved.getStatus());
         return orderMapper.toDto(saved);
     }
 

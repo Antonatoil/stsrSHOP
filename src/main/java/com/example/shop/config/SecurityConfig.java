@@ -1,6 +1,7 @@
 package com.example.shop.config;
 
 import com.example.shop.security.JwtAuthenticationFilter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
@@ -28,6 +30,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        log.info("Настройка SecurityFilterChain: stateless с JWT-аутентификацией");
+
         http
                 // REST + JWT → CSRF не нужен
                 .csrf(csrf -> csrf.disable())
@@ -59,11 +63,14 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 );
 
+        log.debug("JWTAuthenticationFilter добавлен перед UsernamePasswordAuthenticationFilter");
+
         return http.build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+        log.info("Инициализация BCryptPasswordEncoder для шифрования паролей");
         return new BCryptPasswordEncoder();
     }
 
@@ -71,6 +78,7 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration
     ) throws Exception {
+        log.debug("Получение AuthenticationManager из AuthenticationConfiguration");
         return configuration.getAuthenticationManager();
     }
 }

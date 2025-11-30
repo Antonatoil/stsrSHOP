@@ -9,6 +9,7 @@ import com.example.shop.mapper.ProductMapper;
 import com.example.shop.repository.ProductRepository;
 import com.example.shop.service.CategoryService;
 import com.example.shop.service.ProductService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 public class ProductServiceImpl implements ProductService {
 
@@ -37,6 +39,8 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public Page<ProductDto> getProducts(Pageable pageable) {
+        log.debug("Получение списка активных товаров: page={}, size={}",
+                pageable.getPageNumber(), pageable.getPageSize());
         return productRepository.findAllByActiveTrue(pageable)
                 .map(productMapper::toDto);
     }
@@ -47,6 +51,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Cacheable(cacheNames = "products", key = "#id")
     public ProductDto getById(Long id) {
+        log.debug("Получение товара по id={} (кэшируемый метод)", id);
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
         return productMapper.toDto(product);
@@ -58,6 +63,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductDto create(CreateProductRequestDto dto) {
+        log.info("Создание товара: name={}, categoryId={}", dto.getName(), dto.getCategoryId());
         Category category = categoryService.getById(dto.getCategoryId());
 
         Product product = productMapper.toEntity(dto);
@@ -66,6 +72,7 @@ public class ProductServiceImpl implements ProductService {
         product.setCreatedAt(LocalDateTime.now());
 
         Product saved = productRepository.save(product);
+        log.info("Товар создан: id={}, name={}", saved.getId(), saved.getName());
         return productMapper.toDto(saved);
     }
 
@@ -75,6 +82,9 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductDto update(Long id, CreateProductRequestDto dto) {
+        log.info("Обновление товара id={} новым name={}, categoryId={}",
+                id, dto.getName(), dto.getCategoryId());
+
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
 
@@ -84,6 +94,7 @@ public class ProductServiceImpl implements ProductService {
         product.setCategory(category);
 
         Product saved = productRepository.save(product);
+        log.info("Товар обновлён: id={}, name={}", saved.getId(), saved.getName());
         return productMapper.toDto(saved);
     }
 
@@ -94,10 +105,12 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @CacheEvict(cacheNames = "products", allEntries = true)
     public void delete(Long id) {
+        log.warn("Запрос на удаление (soft delete) товара id={}", id);
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
 
         product.setActive(false);
         productRepository.save(product);
+        log.info("Товар помечен как неактивный (soft delete): id={}", id);
     }
 }
