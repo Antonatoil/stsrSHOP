@@ -5,53 +5,27 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.time.OffsetDateTime;
+import java.util.Map;
 
-/**
- * Единый формат ответа об ошибке для REST API.
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApiErrorResponse {
 
-    /**
-     * HTTP статус (например, 400, 403, 404, 500).
-     */
+    /** HTTP статус-код (400, 404, 500, ...) */
     private int status;
 
-    /**
-     * Краткое текстовое описание статуса (Bad Request, Forbidden, Not Found, ...).
-     */
+    /** Краткое описание статуса ("Bad Request", "Not Found", "Internal Server Error") */
     private String error;
 
-    /**
-     * Человеко-читаемое сообщение об ошибке.
-     */
+    /** Человеко-читаемое сообщение */
     private String message;
 
-    /**
-     * URI запроса, на котором произошла ошибка.
-     */
-    private String path;
+    /** Время возникновения ошибки */
+    private OffsetDateTime timestamp;
 
-    /**
-     * Время, когда ошибка произошла.
-     */
-    private LocalDateTime timestamp;
-
-    /**
-     * Детали валидационных ошибок (если есть).
-     */
-    private List<FieldValidationError> validationErrors;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FieldValidationError {
-        private String field;
-        private String message;
-    }
+    /** Для ошибок валидации: field -> message */
+    private Map<String, String> errors;
 }

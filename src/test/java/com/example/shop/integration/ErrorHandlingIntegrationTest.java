@@ -5,42 +5,41 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Интеграционные тесты для глобальной обработки ошибок.
- */
 public class ErrorHandlingIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     /**
-     * Проверяем, что несуществующий URL отдаёт 404 в нашем формате.
+     * Неизвестный endpoint должен отдавать 404 в унифицированном формате.
      */
     @Test
     void unknownEndpointShouldReturnUnified404() throws Exception {
-        mockMvc.perform(get("/api/definitely-not-existing-url"))
+        mockMvc.perform(
+                        get("/api/definitely-not-existing-url")
+                                // даём "пользователя", чтобы пройти Security и дойти до NoHandlerFoundException
+                                .with(user("test-user").roles("USER"))
+                )
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status", is(404)))
-                .andExpect(jsonPath("$.error", is("Not Found")))
-                .andExpect(jsonPath("$.message").value("Ресурс не найден"))
-                .andExpect(jsonPath("$.path", is("/api/definitely-not-existing-url")))
-                .andExpect(jsonPath("$.timestamp", notNullValue()));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
     }
 
     /**
-     * Проверяем 400: кривой/некорректный запрос на регистрацию пользователя.
-     * Здесь предполагаем, что на DTO стоят @Valid-аннотации.
+     * Невалидный запрос на /api/auth/register должен отдавать 400
+     * в унифицированном формате, с errors по полям.
      */
     @Test
     void invalidRegisterRequestShouldReturnUnified400() throws Exception {
-        String badJson = """
+        String body = """
                 {
                   "email": "not-an-email",
                   "password": "",
@@ -48,15 +47,19 @@ public class ErrorHandlingIntegrationTest extends BaseIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(badJson))
+        mockMvc.perform(
+                        post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body)
+                )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status", is(400)))
-                .andExpect(jsonPath("$.error", is("Bad Request")))
-                .andExpect(jsonPath("$.message").value("Ошибка валидации входных данных"))
-                .andExpect(jsonPath("$.path", is("/api/auth/register")))
-                .andExpect(jsonPath("$.timestamp", notNullValue()))
-                .andExpect(jsonPath("$.validationErrors").isArray());
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.errors.email").exists())
+                .andExpect(jsonPath("$.errors.password").exists())
+                .andExpect(jsonPath("$.errors.fullName").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
     }
 }
