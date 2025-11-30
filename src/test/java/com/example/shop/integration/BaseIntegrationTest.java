@@ -3,6 +3,7 @@ package com.example.shop.integration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -11,11 +12,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Базовый интеграционный тест.
- * Поднимает PostgreSQL в Testcontainers и
- * подсовывает его Spring Boot через DynamicPropertySource.
+ * Поднимает PostgreSQL в Testcontainers и прокидывает настройки в Spring Boot.
  *
- * Redis и RabbitMQ в тестах отключены через spring.autoconfigure.exclude,
- * чтобы тесты не требовали запущенных контейнеров Redis/RabbitMQ.
+ * ВАЖНО:
+ * - @DirtiesContext(AFTER_CLASS) заставляет Spring пересоздавать контекст
+ *   для каждого тестового класса, чтобы URL БД соответствовал порту
+ *   именно его контейнера.
+ * - Redis и RabbitMQ по-прежнему отключены автоконфигом в @SpringBootTest.
  */
 @SpringBootTest(properties = {
         "spring.cache.type=none",
@@ -26,20 +29,20 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 })
 @Testcontainers(disabledWithoutDocker = true)
 @AutoConfigureMockMvc
-public class BaseIntegrationTest {
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+public abstract class BaseIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16")
             .withDatabaseName("shop")
             .withUsername("shop")
             .withPassword("shop");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        // на всякий случай жёстко укажем драйвер
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.datasource.driver-class-name",
                 () -> "org.postgresql.Driver");
     }

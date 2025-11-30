@@ -2,6 +2,7 @@ package com.example.shop.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -17,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Интеграционный тест для /api/auth/register.
  * Проверяем, что новый пользователь успешно регистрируется
- * и в ответе есть JWT-токен.
+ * и в ответе есть валидный (не пустой) JWT-токен.
  */
 public class AuthIntegrationTest extends BaseIntegrationTest {
 
@@ -28,7 +29,9 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @DisplayName("Успешная регистрация нового пользователя возвращает JWT-токен")
     void registerShouldReturnJwtToken() throws Exception {
+        // уникальный email, чтобы не ловить конфликт по уникальному индексу
         String email = "test+" + UUID.randomUUID() + "@example.com";
 
         String requestJson = """
@@ -54,5 +57,9 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
         assertTrue(json.hasNonNull("token"), "Ответ должен содержать поле 'token'");
         String token = json.get("token").asText();
         assertFalse(token.isBlank(), "JWT токен не должен быть пустым");
+
+        // накидаем ещё минимальную проверку формата: две точки в JWT
+        assertTrue(token.chars().filter(ch -> ch == '.').count() == 2,
+                "JWT должен содержать три части, разделённые точками");
     }
 }
