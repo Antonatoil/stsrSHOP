@@ -7,7 +7,7 @@ spring:
     # в Docker можно переопределить SPRING_DATASOURCE_URL
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/shop}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:346655}
+    password: ${SPRING_DATASOURCE_PASSWORD:1111}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10

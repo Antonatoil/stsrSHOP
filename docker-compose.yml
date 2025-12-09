@@ -10,7 +10,7 @@ services:
       # БД
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shop
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: "346655"
+      SPRING_DATASOURCE_PASSWORD: "1111"
 
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
 
@@ -41,7 +41,7 @@ services:
     environment:
       POSTGRES_DB: shop
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "346655"
+      POSTGRES_PASSWORD: "1111"
     ports:
       - "5432:5432"
     volumes:
@@ -84,7 +84,7 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=346655
+      - GF_SECURITY_ADMIN_PASSWORD=1111
     depends_on:
       - prometheus
 
