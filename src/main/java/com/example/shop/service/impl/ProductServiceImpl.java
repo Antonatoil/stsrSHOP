@@ -34,9 +34,7 @@ public class ProductServiceImpl implements ProductService {
         this.productMapper = productMapper;
     }
 
-    /**
-     * Список товаров — только активные, без кэша.
-     */
+
     @Override
     public Page<ProductDto> getProducts(Pageable pageable) {
         log.debug("Получение списка активных товаров: page={}, size={}",
@@ -45,9 +43,7 @@ public class ProductServiceImpl implements ProductService {
                 .map(productMapper::toDto);
     }
 
-    /**
-     * Один товар по id — кэшируем (даже если он неактивен, тк он мог быть в заказах).
-     */
+
     @Override
     @Cacheable(cacheNames = "products", key = "#id")
     public ProductDto getById(Long id) {
@@ -57,9 +53,7 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toDto(product);
     }
 
-    /**
-     * Создание товара — очищаем кэш списка.
-     */
+
     @Override
     @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductDto create(CreateProductRequestDto dto) {
@@ -76,9 +70,7 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toDto(saved);
     }
 
-    /**
-     * Обновление товара — очищаем кэш.
-     */
+
     @Override
     @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductDto update(Long id, CreateProductRequestDto dto) {
@@ -98,10 +90,7 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toDto(saved);
     }
 
-    /**
-     * "Удаление" товара — делаем soft delete: active = false.
-     * Заказы не ломаются, FK не ругается.
-     */
+
     @Override
     @CacheEvict(cacheNames = "products", allEntries = true)
     public void delete(Long id) {

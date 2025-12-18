@@ -17,17 +17,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * 404 — неизвестный endpoint.
-     *
-     * Ожидаемый JSON (по сути):
-     * {
-     *   "status": 404,
-     *   "error": "Not Found",
-     *   "message": "No endpoint GET /api/definitely-not-existing-url.",
-     *   "timestamp": "..."
-     * }
-     */
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNoHandlerFound(NoHandlerFoundException ex) {
         HttpStatus status = HttpStatus.NOT_FOUND;
@@ -37,7 +26,7 @@ public class GlobalExceptionHandler {
 
         ApiErrorResponse body = ApiErrorResponse.builder()
                 .status(status.value())
-                .error(status.getReasonPhrase())     // "Not Found"
+                .error(status.getReasonPhrase())
                 .message(message)
                 .timestamp(OffsetDateTime.now())
                 .build();
@@ -45,24 +34,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(body);
     }
 
-    /**
-     * 400 — ошибки валидации (@Valid).
-     *
-     * Тест явно ждёт поле $.error, плюс errors по полям.
-     *
-     * Пример JSON:
-     * {
-     *   "status": 400,
-     *   "error": "Bad Request",
-     *   "message": "Validation failed",
-     *   "errors": {
-     *     "email": "...",
-     *     "password": "...",
-     *     "fullName": "..."
-     *   },
-     *   "timestamp": "..."
-     * }
-     */
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
@@ -78,18 +50,16 @@ public class GlobalExceptionHandler {
 
         ApiErrorResponse body = ApiErrorResponse.builder()
                 .status(status.value())
-                .error(status.getReasonPhrase())     // "Bad Request"
+                .error(status.getReasonPhrase())
                 .message("Validation failed")
-                .errors(fieldErrors)                 // важно: сохраняем старую структуру errors
+                .errors(fieldErrors)
                 .timestamp(OffsetDateTime.now())
                 .build();
 
         return ResponseEntity.status(status).body(body);
     }
 
-    /**
-     * 500 — всё остальное.
-     */
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleAny(Exception ex) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -98,7 +68,7 @@ public class GlobalExceptionHandler {
 
         ApiErrorResponse body = ApiErrorResponse.builder()
                 .status(status.value())
-                .error(status.getReasonPhrase())     // "Internal Server Error"
+                .error(status.getReasonPhrase())
                 .message(ex.getMessage())
                 .timestamp(OffsetDateTime.now())
                 .build();

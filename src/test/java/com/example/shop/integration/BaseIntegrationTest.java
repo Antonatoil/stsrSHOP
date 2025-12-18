@@ -10,16 +10,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/**
- * Базовый интеграционный тест.
- * Поднимает PostgreSQL в Testcontainers и прокидывает настройки в Spring Boot.
- *
- * ВАЖНО:
- * - @DirtiesContext(AFTER_CLASS) заставляет Spring пересоздавать контекст
- *   для каждого тестового класса, чтобы URL БД соответствовал порту
- *   именно его контейнера.
- * - Redis и RabbitMQ по-прежнему отключены автоконфигом в @SpringBootTest.
- */
+
 @SpringBootTest(properties = {
         "spring.cache.type=none",
         "spring.autoconfigure.exclude=" +
@@ -49,6 +40,5 @@ public abstract class BaseIntegrationTest {
 
     @Test
     void contextLoads() {
-        // простой smoke-тест, что контекст вообще поднимается
     }
 }

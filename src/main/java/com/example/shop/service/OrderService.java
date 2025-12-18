@@ -16,6 +16,5 @@ public interface OrderService {
 
     Page<OrderDto> getAllOrders(Pageable pageable);
 
-    // новый метод
     OrderDto updateStatus(Long id, OrderStatus status);
 }

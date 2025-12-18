@@ -3,8 +3,7 @@ spring:
     name: shop
 
   datasource:
-    # по умолчанию — локальный Postgres,
-    # в Docker можно переопределить SPRING_DATASOURCE_URL
+
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/shop}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:1111}
@@ -17,47 +16,44 @@ spring:
       connection-timeout: 30000  # 30 секунд
 
   jpa:
-    open-in-view: false          # не тащим ленивые связи в контроллеры
+    open-in-view: false
     hibernate:
-      ddl-auto: validate         # схему контролирует Flyway
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
-    show-sql: false              # логирование SQL — через логгер, не в консоль
+    show-sql: false
 
   flyway:
     enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: true    # на случай, если БД уже не пустая
+    baseline-on-migrate: true
 
   cache:
     type: redis
 
   data:
     redis:
-      # локально — localhost, в docker-compose можно задать SPRING_REDIS_HOST=redis
       host: ${SPRING_REDIS_HOST:localhost}
       port: ${SPRING_REDIS_PORT:6379}
       timeout: 2000
 
   rabbitmq:
-    # локально — localhost, в docker-compose можно задать SPRING_RABBITMQ_HOST=rabbitmq
     host: ${SPRING_RABBITMQ_HOST:localhost}
     port: ${SPRING_RABBITMQ_PORT:5672}
     username: ${SPRING_RABBITMQ_USERNAME:guest}
     password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
   mvc:
-    # чтобы 404 шли в NoHandlerFoundException и обрабатывались нашим @RestControllerAdvice
     throw-exception-if-no-handler-found: true
 
   web:
     resources:
-      add-mappings: false        # отключаем дефолтную статику, если не нужна
+      add-mappings: false
 
 server:
   error:
-    include-message: always      # message всегда попадает в JSON ошибки
+    include-message: always
 
 management:
   endpoints:
@@ -66,9 +62,8 @@ management:
         include: health,info,prometheus
   metrics:
     tags:
-      application: shop          # общий тег для всех метрик
+      application: shop
 
 jwt:
-  # можно переопределить через env JWT_SECRET / JWT_EXPIRATION_MS
   secret: ${JWT_SECRET:very-secret-key-for-shop-application-change-me}
   expiration-ms: ${JWT_EXPIRATION_MS:3600000}

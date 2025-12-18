@@ -32,7 +32,6 @@ public class RedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
 
-        // по желанию можно настроить value-serializer, но для курсовика можно оставить дефолт
         return template;
     }
 }

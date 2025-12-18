@@ -33,14 +33,11 @@ public class SecurityConfig {
         log.info("Настройка SecurityFilterChain: stateless с JWT-аутентификацией");
 
         http
-                // REST + JWT → CSRF не нужен
                 .csrf(csrf -> csrf.disable())
-                // без сессий, только токены
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // полностью открытые эндпоинты (регистрация/логин, доки, метрики)
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/v3/api-docs/**",
@@ -51,13 +48,10 @@ public class SecurityConfig {
                                 "/actuator/prometheus"
                         ).permitAll()
 
-                        // каталог товаров — GET доступен всем
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
 
-                        // всё остальное требует авторизации, роли уже режем @PreAuthorize в контроллерах
                         .anyRequest().authenticated()
                 )
-                // наш JWT-фильтр перед стандартным UsernamePasswordAuthenticationFilter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class

@@ -8,13 +8,10 @@ import org.springframework.data.domain.Pageable;
 
 public interface CategoryService {
 
-    // Старый метод — нужен для ProductService и других внутренних сервисов
     Category getById(Long id);
 
-    // Старый метод — оставить для совместимости
     Category createIfNotExists(String name, String description);
 
-    // ===== Новый функционал для REST API =====
 
     Page<CategoryDto> getCategories(Pageable pageable);
 

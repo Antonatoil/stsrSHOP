@@ -15,14 +15,11 @@ public class ErrorHandlingIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    /**
-     * Неизвестный endpoint должен отдавать 404 в унифицированном формате.
-     */
+
     @Test
     void unknownEndpointShouldReturnUnified404() throws Exception {
         mockMvc.perform(
                         get("/api/definitely-not-existing-url")
-                                // даём "пользователя", чтобы пройти Security и дойти до NoHandlerFoundException
                                 .with(user("test-user").roles("USER"))
                 )
                 .andExpect(status().isNotFound())
@@ -33,10 +30,7 @@ public class ErrorHandlingIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.timestamp").exists());
     }
 
-    /**
-     * Невалидный запрос на /api/auth/register должен отдавать 400
-     * в унифицированном формате, с errors по полям.
-     */
+
     @Test
     void invalidRegisterRequestShouldReturnUnified400() throws Exception {
         String body = """

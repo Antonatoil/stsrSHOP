@@ -15,9 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Интеграционный тест работы с продуктами на уровне реальной БД (Postgres в Testcontainers).
- */
+
 public class ProductServiceTest extends BaseIntegrationTest {
 
     @Autowired
@@ -30,7 +28,6 @@ public class ProductServiceTest extends BaseIntegrationTest {
     @Transactional
     @DisplayName("Создание категории и продукта, сохранение и загрузка из БД")
     void createProductAndLoadItFromDatabase() {
-        // 1. создаём категорию
         Category category = new Category();
         category.setName("Test Category");
         category.setDescription("Created in integration test");
@@ -38,13 +35,12 @@ public class ProductServiceTest extends BaseIntegrationTest {
         Category savedCategory = categoryRepository.save(category);
         assertNotNull(savedCategory.getId(), "ID категории должен быть заполнен");
 
-        // 2. создаём продукт
         Product product = new Product();
         product.setName("Integration Test Product");
         product.setDescription("Product created in integration test");
         product.setPrice(BigDecimal.valueOf(999.99));
         product.setStock(5);
-        product.setActive(true); // если у тебя есть флаг active
+        product.setActive(true);
         product.setCategory(savedCategory);
 
         Product savedProduct = productRepository.save(product);
@@ -53,7 +49,6 @@ public class ProductServiceTest extends BaseIntegrationTest {
         assertEquals("Integration Test Product", savedProduct.getName());
         assertEquals(savedCategory.getId(), savedProduct.getCategory().getId());
 
-        // 3. достаём все продукты и убеждаемся, что наш там есть
         List<Product> allProducts = productRepository.findAll();
         boolean found = allProducts.stream()
                 .anyMatch(p -> "Integration Test Product".equals(p.getName()));

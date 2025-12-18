@@ -2,12 +2,10 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  # Сам Prometheus (по желанию)
   - job_name: 'prometheus'
     static_configs:
       - targets: ['prometheus:9090']
 
-  # Наш Spring Boot сервис
   - job_name: 'shop-app'
     metrics_path: '/actuator/prometheus'
     static_configs:

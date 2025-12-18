@@ -7,6 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    // Список только активных товаров (для каталога)
     Page<Product> findAllByActiveTrue(Pageable pageable);
 }

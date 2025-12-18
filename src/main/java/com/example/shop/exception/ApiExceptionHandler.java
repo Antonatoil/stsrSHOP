@@ -25,13 +25,7 @@ public class ApiExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    /**
-     * Валидационные ошибки @Valid / @Validated.
-     * Тест хочет:
-     * - статус 400
-     * - поле $.error (например "Bad Request")
-     * - поле $.errors с мапой field -> message
-     */
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         HttpStatus status = HttpStatus.BAD_REQUEST;

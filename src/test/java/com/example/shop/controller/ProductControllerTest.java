@@ -11,11 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Интеграционный тест для ProductController.
- * Проверяем, что публичный каталог товаров доступен без JWT
- * и возвращает Page<ProductDto>-подобный ответ.
- */
+
 public class ProductControllerTest extends BaseIntegrationTest {
 
     @Autowired
@@ -27,7 +23,6 @@ public class ProductControllerTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/products")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                // проверяем базовую структуру Page<T>
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.pageable").exists())
                 .andExpect(jsonPath("$.totalElements").exists())

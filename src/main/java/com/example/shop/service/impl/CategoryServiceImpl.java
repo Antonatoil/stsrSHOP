@@ -27,7 +27,6 @@ public class CategoryServiceImpl implements CategoryService {
         this.categoryMapper = categoryMapper;
     }
 
-    // ===== старые методы (для совместимости) =====
 
     @Override
     @Transactional(readOnly = true)
@@ -58,7 +57,6 @@ public class CategoryServiceImpl implements CategoryService {
         return saved;
     }
 
-    // ===== новые методы для REST API =====
 
     @Override
     @Transactional(readOnly = true)
