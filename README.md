@@ -187,7 +187,6 @@ $iterationsPerThread = 100
 ## Завершение работы
 
 ```bash
-cd D:\бгуир\стср\shop
 docker-compose down
 ```
 
